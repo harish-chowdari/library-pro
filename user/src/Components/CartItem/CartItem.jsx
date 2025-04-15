@@ -8,27 +8,29 @@ const CartItem = ({ item, removeFromCart, reserveBook, willUseBy, handleDateChan
 
   const userId = localStorage.getItem("userId");
 
+  console.log(item,'item');
+
   useEffect(() => {
     const fetchReservationData = async () => {
       try {
         // Fetch reservation count for the current book ID
-        const res = await axios.get(`reserved/book-copies-count/${item.bookId._id}`);
+        const res = await axios.get(`reserved/book-copies-count/${item?.id}`);
         const resCount = res.data.reservedCount;
 
         // Fetch the total number of copies of the book from your backend API
-        const bookResponse = await axios.get(`librarian/getbook/${item.bookId._id}`);
+        const bookResponse = await axios.get(`librarian/getbook/${item?.id}`);
         const numberOfCopies = bookResponse.data.numberOfCopies;
 
         // Check if the reserved count equals the number of copies to determine if the book is out of stock
         setIsOutOfStock(resCount >= numberOfCopies);
 
         // Check if the book is already reserved by the user
-        const isReserved = await checkReservation(item.bookId._id);
+        const isReserved = await checkReservation(item?.id);
         setIsBookReserved(isReserved);
 
 
         const nearestDateRes = await axios.get(
-          `reserved/nearest-will-use-by/${item.bookId._id}`
+          `reserved/nearest-will-use-by/${item?.id}`
         );
         const nearestDate = nearestDateRes.data.nearestWillUseBy;
         
@@ -43,16 +45,16 @@ const CartItem = ({ item, removeFromCart, reserveBook, willUseBy, handleDateChan
 
     // Fetch reservation data
     fetchReservationData();
-  }, [item.bookId._id]);
+  }, [item?.id]);
 
   // Function to check if the book is reserved by the user
   const checkReservation = async (bookId) => {
     try {
       const res = await axios.get(`reserved/books-reserved/${userId}`);
-      if (res.data.booksReserved && res.data.booksReserved.items) {
-        const reservedItems = res.data.booksReserved.items;
+      if (res?.data?.booksReserved && res?.data?.booksReserved?.items) {
+        const reservedItems = res?.data?.booksReserved?.items;
         // Check if the book ID exists in the reserved items array
-        return reservedItems.some(item => item.bookId._id === bookId);
+        return reservedItems.some(item => item?.id === bookId);
       } else {
         return false;
       }
@@ -64,12 +66,12 @@ const CartItem = ({ item, removeFromCart, reserveBook, willUseBy, handleDateChan
 
   return (
     <div>
-      {item.bookId && (
+      {item && (
         <div className="cartitems-format-main cart-items-format">
-          {item.bookId.bookImage && <img src={item.bookId.bookImage} alt={item.bookId.bookName} />}
-          {item.bookId.bookName && <p>{item.bookId.bookName}</p>}
-          {item.bookId.authorName && <p>{item.bookId.authorName}</p>}
-          <button className="remove-button" onClick={() => removeFromCart(item.bookId._id)}>Remove</button>
+          {item?.bookImage && <img src={item.bookImage} alt={item?.bookName} />}
+          {item?.bookName && <p>{item.bookName}</p>}
+          {item?.authorName && <p>{item.authorName}</p>}
+          <button className="remove-button" onClick={() => removeFromCart(item?.id)}>Remove</button>
 
           {/* Check if the book is already reserved */}
           {isBookReserved ? (
@@ -80,7 +82,7 @@ const CartItem = ({ item, removeFromCart, reserveBook, willUseBy, handleDateChan
               <p>Not Available</p>
             ) : (
 
-                <button className="reserve-button" onClick={() => reserveBook(item.bookId._id, item.bookId.fine)}>Reserve</button>
+                <button className="reserve-button" onClick={() => reserveBook(item?.id, item?.fine)}>Reserve</button>
 
               // Display input field for date if not reserved or out of stock
             )

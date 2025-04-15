@@ -42,7 +42,7 @@ const CreateAccountPage = () => {
                 password,
                 name:fullName,});
             navigate(`/app/${response.data.librarian.name}`)
-            localStorage.setItem('librarianId', response.data.librarian._id);
+            localStorage.setItem('librarianId', response.data.librarian.id);
             setLoading(false);
             
         }catch(error){

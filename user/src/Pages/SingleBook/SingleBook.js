@@ -17,7 +17,7 @@ const SingleBook = ({ cart, setCart }) => {
     async function getBook() {
       try {
         const res = await axios.get(`librarian/getbook/${id}`);
-        setBook(res.data);
+        setBook(res?.data);
         setLoading(false); // Set loading to false after data is fetched
       } catch (error) {
         console.error('Error fetching book:', error);
@@ -50,12 +50,12 @@ const SingleBook = ({ cart, setCart }) => {
           setLoading(true); // Set loading to true when adding to cart
           const response = await axios.post('cart/add-to-cart', {
             userId: userId,
-            bookId: book._id,
+            bookId: book.id,
             quantity: 1
           });
-          console.log(response.data)
+          console.log(response?.data)
           
-          if (response.data.alreadyAdded) {
+          if (response?.data?.alreadyAdded) {
             setPopUpText("This Book is already added to cart");
             setIsPopUpOpen(true);
           } 
@@ -63,9 +63,9 @@ const SingleBook = ({ cart, setCart }) => {
           else {
             setPopUpText("This book is successfully added to the cart");
             setIsPopUpOpen(true);
-            setCart([...cart, { bookId: book._id, quantity: 1 }]);
+            setCart([...cart, { bookId: book.id, quantity: 1 }]);
           }
-          console.log(response.data);
+          console.log(response?.data);
         } catch (error) {
           console.error('Error adding to cart:', error);
         } finally {
@@ -93,18 +93,18 @@ const SingleBook = ({ cart, setCart }) => {
         book ? (
           <div className="book-details">
             <div className="book-left">
-              <img width="100px" src={book.bookImage} alt={book.bookName} />
+              <img width="100px" src={book?.bookImage} alt={book?.bookName} />
             </div>
             <div className="book-right">
               <div>
-                <h2>{book.bookName}</h2>
+                <h2>{book?.bookName}</h2>
                 <hr/>
               </div>
               <div className='p-tags'>
-                <p><span>Author :</span> {book.authorName}</p>
-                <p><span>isbnNumber :</span> {book.isbnNumber}</p>
-                <p><span>Published in :</span>{formatDate(book.publishedDate)}</p>
-                <p><span>Description :</span> {book.description}</p>
+                <p><span>Author :</span> {book?.authorName}</p>
+                <p><span>isbnNumber :</span> {book?.isbnNumber}</p>
+                <p><span>Published in :</span>{formatDate(book?.publishedDate)}</p>
+                <p><span>Description :</span> {book?.description}</p>
               </div>
               <div>
                 <button className="add-to-cart-btn" onClick={addToCart}>Add to Cart</button>

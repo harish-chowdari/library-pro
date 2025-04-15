@@ -40,7 +40,7 @@ const CreateAccountPage = () => {
                 password,
                 name:fullName,});
 
-                const userId = response.data.user._id;
+                const userId = response.data.user.id;
         // Store userId in local storage
         localStorage.setItem('userId', userId);
         

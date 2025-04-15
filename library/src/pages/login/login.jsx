@@ -25,7 +25,7 @@ const LoginPage = () => {
             const response = await axios.post('auth/librarian-login',{email, password });
             console.log(response);
             navigate(`/app/${response.data.librarian.name}`)
-            localStorage.setItem('librarianId', response.data.librarian._id);
+            localStorage.setItem('librarianId', response.data.librarian.id);
 
         }
         

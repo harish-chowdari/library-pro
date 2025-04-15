@@ -34,19 +34,19 @@ const Home = () => {
     return (
         <div className='layout'>
             <div className="content">
-                {books.length === 0 ? <h3>Books List is empty</h3> : <h3> Lists of Books</h3>}
+                {books?.length === 0 ? <h3>Books List is empty</h3> : <h3> Lists of Books</h3>}
                 {loading ? (
                     <Loader />
                 ) : (
                     <div className="book-cards-container">
-                        {books.map((book) => (
-                            <div className='book-cards' key={book._id} >
+                        {books?.map((book) => (
+                            <div className='book-cards' key={book?.id} >
                                 <BookCard
-                                    id={book._id}
-                                    title={book.bookName}
-                                    author={book.authorName}
-                                    imageUrl={book.bookImage}
-                                    bookId={book._id}
+                                    id={book?.id}
+                                    title={book?.bookName}
+                                    author={book?.authorName}
+                                    imageUrl={book?.bookImage}
+                                    bookId={book?.id}
                                 />
                             </div>
                         ))}

@@ -28,6 +28,20 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS reserved_books (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            userId INT NOT NULL,  
+            bookId INT NOT NULL,  
+            fine VARCHAR(255),
+            createdDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            willUseBy DATE,
+            submitStatus VARCHAR(255),
+            FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (bookId) REFERENCES books(id) ON DELETE CASCADE 
+        )
+    `);
+
     console.log("Tables ensured."); 
 }
 

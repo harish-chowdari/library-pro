@@ -30,7 +30,7 @@ const renderStars = (averageRating) => {
     stars.push(<Star key="star-fraction" percentage={fractionalPart} />);
   }
 
-  const emptyStars = 5 - stars.length;
+  const emptyStars = 5 - stars?.length;
   for (let i = 0; i < emptyStars; i++) {
     stars.push(<Star key={`star-empty-${i}`} percentage={0} />);
   }
@@ -57,13 +57,13 @@ const Feedbacks = () => {
     fetchFeedbacks();
   }, [id]);
 
-  const averageRating = feedbacks.length
-    ? feedbacks.reduce((acc, cur) => acc + cur.rating, 0) / feedbacks.length
+  const averageRating = feedbacks?.length
+    ? feedbacks.reduce((acc, cur) => acc + cur.rating, 0) / feedbacks?.length
     : 0;
 
-  const starDistribution = [1, 2, 3, 4, 5].map((star) => {
-    const count = feedbacks.filter((f) => f.rating === star).length;
-    const percentage = (count / feedbacks.length) * 100;
+  const starDistribution = [1, 2, 3, 4, 5]?.map((star) => {
+    const count = feedbacks?.filter((f) => f.rating === star)?.length;
+    const percentage = (count / feedbacks?.length) * 100;
     return { star, count, percentage };
   });
 
@@ -76,8 +76,8 @@ const Feedbacks = () => {
   };
 
   const sortedAndFilteredFeedbacks = feedbacks
-    .filter((feedback) => !starFilter || feedback.rating === parseInt(starFilter))
-    .sort((a, b) => {
+    ?.filter((feedback) => !starFilter || feedback.rating === parseInt(starFilter))
+    ?.sort((a, b) => {
       return sortOrder === 'asc' ? a.rating - b.rating : b.rating - a.rating;
     });
 
@@ -89,9 +89,9 @@ const Feedbacks = () => {
           {renderStars(averageRating)}
           <span className={Design.averageText}>{averageRating.toFixed(1)} out of 5</span>
         </div>
-        <p>Total Ratings: {feedbacks.length}</p>
+        <p>Total Ratings: {feedbacks?.length}</p>
 
-        {starDistribution.map((data) => (
+        {starDistribution?.map((data) => (
           <div key={data.star} style={{ display: 'flex', alignItems: 'center' }}>
             <span className={Design.starsSpan}>{data.star} stars</span>
             <div
@@ -146,14 +146,14 @@ const Feedbacks = () => {
         </div>
 
         <div className={Design.fbDivision}>
-          {sortedAndFilteredFeedbacks.length > 0 ? (
-            sortedAndFilteredFeedbacks.map((feedback, index) => (
+          {sortedAndFilteredFeedbacks?.length > 0 ? (
+            sortedAndFilteredFeedbacks?.map((feedback, index) => (
               <div className={Design.feedback} key={index}>
                 <p className={Design.userIcon}>
                   <FaUser size={24} /> <span>{feedback.userName}</span>
                 </p>
                 <p>
-                {[1, 2, 3, 4, 5].map((star) => (
+                {[1, 2, 3, 4, 5]?.map((star) => (
                           <FaStar
                             key={star}
                             color={

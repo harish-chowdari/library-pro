@@ -53,7 +53,7 @@ const ReservedBooks = () => {
   const fetchBooksReserved = async () => {
     try {
       const res = await axios.get(`reserved/books-reserved/${userId}`);
-      
+    console.log(res.data.booksReserved,'res');
       if (res.data.booksReserved) {
         setBooksReserved(res.data.booksReserved);
         console.log(res.data.booksReserved)
@@ -80,21 +80,22 @@ const ReservedBooks = () => {
       setLoading(true);
 
       // Update the book in the backend
-      const updateSubmitStatusResponse = await axios.put('reserved/update-reserved-book', { userId, bookId: bookId._id });
+      const updateSubmitStatusResponse = await axios.put('reserved/update-reserved-book', { userId, bookId });
 
       // Handle response and display pop-up accordingly
       if (updateSubmitStatusResponse.data.updatedReservation) {
         console.log(updateSubmitStatusResponse.data.updatedReservation);
         // Update the submitStatus in the state
-        setBooksReserved(prevBooks => ({
-          ...prevBooks,
-          items: prevBooks.items.map(item => {
-            if (item.bookId._id === bookId) {
-              return { ...item, submitStatus: "Submitting" };
-            }
-            return item;
-          })
-        }));
+        // setBooksReserved(prevBooks => ({
+        //   ...prevBooks,
+        //   items: prevBooks?.map(item => {
+        //     if (item.bookId === bookId) {
+        //       return { ...item, submitStatus: "Submitting" };
+        //     }
+        //     return item;
+        //   })
+        // }));
+        
 
         setPopUpText(updateSubmitStatusResponse.data.updatedReservation);
         setIsPopUpOpen(true);
@@ -124,7 +125,7 @@ const ReservedBooks = () => {
         <Loader /> 
       ) : booksReserved ? (
         <div className='history-division'>
-          {booksReserved.items.length === 0 ? (
+          {booksReserved?.items?.length === 0 ? (
             <h2>No reserved books found.</h2>
           ) : (
             <div className='historyitems-format-main history-headings'>
@@ -138,14 +139,14 @@ const ReservedBooks = () => {
             </div>
           )}
           
-          {booksReserved.items.map((book, index) => (
+          {booksReserved?.map((book, index) => (
   <div className='Main-div' key={index}>
     <div className="historyitems-format-main history-items-format">
-      {book.bookId ? (
+      {book ? (
         <>
-          <img src={book.bookId.bookImage} alt={book.bookName} />
-          <p>{book.bookId.bookName}</p>
-          <p>{book.bookId.authorName}</p>
+          <img src={book.bookImage} alt={book.bookName} />
+          <p>{book.bookName}</p>
+          <p>{book.authorName}</p>
         </> 
         )
         :
@@ -156,8 +157,8 @@ const ReservedBooks = () => {
           <p>Author Name</p>
         </>
         )}
-      <p>{book.createdDate.slice(0, 10)}</p>
-      <p>{book.willUseBy.slice(0, 10)}</p>
+      <p>{book.createdDate?.slice(0, 10)}</p>
+      <p>{book.willUseBy?.slice(0, 10)}</p>
       {book.submitStatus === "Submitting" ? <button style={{cursor:"not-allowed"}}>Requested</button> : <button onClick={() => submitBook(book.bookId)}>Submit</button>}
    
       <div className='book-fine'>

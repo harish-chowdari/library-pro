@@ -114,6 +114,8 @@ const Cart = () => {
     }));
   };
 
+  console.log(cartItems, "cartItems");
+
   
   return (
     <div className='cart-container'>
@@ -135,15 +137,15 @@ const Cart = () => {
               <h3>Will Use By</h3>
             </div>
             <hr className='cart-hr' />
-            {cartItems.map((item, index) => (
+            {cartItems?.map((item, index) => (
               <CartItem
                 key={index}
                 item={item}
-                id={item.bookId._id}
+                id={item?.id}
                 removeFromCart={removeFromCart}
                 reserveBook={reserveBook}
-                willUseBy={willUseByMap[item.bookId._id]}
-                handleDateChange={(event) => handleDateChange(event, item.bookId._id)}
+                willUseBy={willUseByMap[item?.id]}
+                handleDateChange={(event) => handleDateChange(event, item?.id)}
                 
                 reservedBooks={reservedBooks}
               />

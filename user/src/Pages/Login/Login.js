@@ -24,7 +24,7 @@ const LoginPage = () => {
             const response = await axios.post('auth/user-login', { email, password });
             console.log(response);
             // Save user ID in local storage
-            localStorage.setItem('userId', response.data.user._id);
+            localStorage.setItem('userId', response.data.user.id);
             navigate(`/app/${response.data.user.name}`);
         } catch (error) {
             console.log(error);

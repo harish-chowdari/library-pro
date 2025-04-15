@@ -58,7 +58,7 @@ const BookCard = ({ title, imageUrl, id }) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
+console.log(title);
 
 
   const fetchFeedbacks = async () => {
@@ -110,9 +110,11 @@ const BookCard = ({ title, imageUrl, id }) => {
 
     
 
-  const averageRating = feedbacks.length
-    ? feedbacks.reduce((acc, feedback) => acc + feedback.rating, 0) / feedbacks.length
+  const averageRating = feedbacks?.length
+    ? feedbacks.reduce((acc, feedback) => acc + feedback.rating, 0) / feedbacks?.length
     : 0;
+
+    console.log(id,'id');
 
   return (
     <div className="book-card" title="View full details">

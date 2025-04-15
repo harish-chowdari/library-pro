@@ -48,7 +48,7 @@ const librarianLogin = async (req, res) => {
 
 // Get Librarian by ID
 const getLibrarianById = async (req, res) => {
-  try {
+    try {
         const { id } = req.params;
 
         // Find librarian by ID

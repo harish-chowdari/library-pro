@@ -44,9 +44,9 @@ const Home = () => {
                 ) : ( 
                     <div className="book-cards-container">
                         {books.map((book) => (
-                            <div className='book-cards' key={book._id} >
+                            <div className='book-cards' key={book.id} >
                                 <BookCard
-                                    id={book._id}
+                                    id={book.id}
                                     fetchBooks={fetchBooks}
                                     title={book.bookName}
                                     author={book.authorName}
