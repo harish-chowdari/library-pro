@@ -1,6 +1,6 @@
 const dotenv = require("dotenv");
 dotenv.config({ path: __dirname+'/.env' });
-require("./mongoose")
+require("./db")
 
 
 const express=require("express");
@@ -59,7 +59,7 @@ app.use("/publication", Publication)
 
 
 app.all("/*",(req,res)=>{
-    res.send("page not found");
+    res.send("page not found"); 
 });
 
 //port listening at in the server

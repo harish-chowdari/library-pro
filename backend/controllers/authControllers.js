@@ -1,131 +1,138 @@
-const librarainModel = require("../models/librarian");
+const connection = require("../db");
 
-const userModel = require("../models/user")
-
-
+// Create Librarian Account
 const createLibrarianAccount = async (req, res) => {
-    try {
-        const {email,name,password} = req.body;
-        const isEmailExist = await librarainModel.findOne({email});
-        if(isEmailExist){
-            return res.status(400).json({"message":"Email already exists"});
-        }
-        const librarian = new librarainModel({
-            email,
-            name,
-            password
-        });
-        await librarian.save();
-        return res.send({"message":"Account created successfully",librarian:librarian});
-    } catch (error) {
-        console.log(error);
-        res.status(400).json({"message":"Internal server error"});
-    }
-}
+  try {
+    const { email, name, password } = req.body;
 
+    // Check if the librarian already exists
+    const [existing] = await connection.query("SELECT * FROM librarians WHERE email = ?", [email]);
+    if (existing.length > 0) return res.status(400).json({ message: "Email already exists" });
 
+    // Insert the new librarian
+    const [result] = await connection.query("INSERT INTO librarians (email, name, password) VALUES (?, ?, ?)", [email, name, password]);
+    
+    // Retrieve the newly created librarian
+    const [librarian] = await connection.query("SELECT * FROM librarians WHERE id = ?", [result.insertId]);
+    
+    return res.json({ message: "Account created successfully", librarian: librarian[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Librarian Login
 const librarianLogin = async (req, res) => {
-    try{
-        const {email,password} = req.body;
-        const librarian = await librarainModel.findOne({email});
-        if(!librarian){
-            return res.status(400).json({"message":"User Not Found"});
-        }
-        if(librarian.password === password){
-            return res.send({"message":"Login successful",librarian:librarian});
-        }else{
-            return res.status(400).json({"message":"Invalid credentials"});
-        }
-    }catch(error){
-        res.status(400).json({"message":"Internal server error"});
+  try {
+    const { email, password } = req.body;
+
+    // Find librarian by email
+    const [rows] = await connection.query("SELECT * FROM librarians WHERE email = ?", [email]);
+
+    if (rows.length === 0) return res.status(400).json({ message: "User Not Found" });
+
+    const librarian = rows[0];
+
+    // Check password
+    if (librarian.password === password) {
+      return res.json({ message: "Login successful", librarian });
+    } else {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
-}
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
-
-
-
+// Get Librarian by ID
 const getLibrarianById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const librarian = await librarainModel.findById(id);
-        if (!librarian) {
-            return res.status(200).json({ "message": "librarian not found" });
-        }
-        return res.json({ "message": "librarian found", librarian });
-    } catch (error) {
-        res.status(500).json({ "message": "Internal server error" });
-    }
-}
+  try {
+    const { id } = req.params;
 
+    // Find librarian by ID
+    const [rows] = await connection.query("SELECT * FROM librarians WHERE id = ?", [id]);
 
+    if (rows.length === 0) return res.status(400).json({ message: "Librarian not found" });
 
+    const librarian = rows[0];
+    return res.json({ message: "Librarian found", librarian });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
-
+// Create User Account
 const createUserAccount = async (req, res) => {
-    try {
-        const {email,name,password} = req.body;
-        const isEmailExist = await userModel.findOne({email});
-        if(isEmailExist){
-            return res.status(400).json({"message":"Email already exists"});
-        }
-        const user = new userModel({
-            email,
-            name,
-            password
-        });
-        await user.save();
-        return res.send({"message":"Account created successfully",user:user});
-    } catch (error) {
-        console.log(error);
-        res.status(400).json({"message":"Internal server error"});
-    }
-}
+  try {
+    const { email, name, password } = req.body;
 
+    // Check if the user already exists
+    const [existing] = await connection.query("SELECT * FROM users WHERE email = ?", [email]);
+    if (existing.length > 0) return res.status(400).json({ message: "Email already exists" });
 
+    // Insert the new user
+    const [result] = await connection.query("INSERT INTO users (email, name, password) VALUES (?, ?, ?)", [email, name, password]);
+    
+    // Retrieve the newly created user
+    const [user] = await connection.query("SELECT * FROM users WHERE id = ?", [result.insertId]);
+
+    return res.json({ message: "Account created successfully", user: user[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// User Login
 const userLogin = async (req, res) => {
-    try{
-        const {email,password} = req.body;
-        const user = await userModel.findOne({email});
-        if(!user){
-            return res.status(400).json({"message":"User Not Found"});
-        }
-        if(user.password === password){
-            return res.send({"message":"Login successful",user:user});
-        }else{
-            return res.status(400).json({"message":"Invalid credentials"});
-        }
-    }catch(error){
-        res.status(400).json({"message":"Internal server error"});
+  try {
+    const { email, password } = req.body;
+
+    // Find user by email
+    const [rows] = await connection.query("SELECT * FROM users WHERE email = ?", [email]);
+
+    if (rows.length === 0) return res.status(400).json({ message: "User Not Found" });
+
+    const user = rows[0];
+
+    // Check password
+    if (user.password === password) {
+      return res.json({ message: "Login successful", user });
+    } else {
+      return res.status(400).json({ message: "Invalid credentials" });
     }
-}
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
-
-
+// Get User by ID
 const getUserById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const user = await userModel.findById(id);
-        if (!user) {
-            return res.status(200).json({ "message": "User not found" });
-        }
-        return res.json({ "message": "User found", user });
-    } catch (error) {
-        res.status(500).json({ "message": "Internal server error" });
-    }
-}
+  try {
+    const { id } = req.params;
 
+    // Find user by ID
+    const [rows] = await connection.query("SELECT * FROM users WHERE id = ?", [id]);
 
+    if (rows.length === 0) return res.status(400).json({ message: "User not found" });
 
-
-
+    const user = rows[0];
+    return res.json({ message: "User found", user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
-    createLibrarianAccount,
-    librarianLogin,
-    getLibrarianById,
-    
-    createUserAccount,
-    userLogin,
-    getUserById
-
-}
+  createLibrarianAccount,
+  librarianLogin,
+  getLibrarianById,
+  createUserAccount,
+  userLogin,
+  getUserById
+};

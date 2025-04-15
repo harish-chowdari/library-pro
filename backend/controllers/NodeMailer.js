@@ -234,25 +234,25 @@ const sendEmail = async (req, res) => {
 
 
 
-cron.schedule("10 * * * * *", async () => {
-  try {
+// cron.schedule("10 * * * * *", async () => {
+//   try {
 
-    const res = await sendEmail()
+//     const res = await sendEmail()
 
-    if(res)
-    {
-      console.log(res)
-      return
-    } 
+//     if(res)
+//     {
+//       console.log(res)
+//       return
+//     } 
 
-    console.log("If any Emails are there to send I have sent those emails.");
+//     console.log("If any Emails are there to send I have sent those emails.");
 
-  } 
+//   } 
   
-  catch(error) {
-    console.log("Error while sending emails in cron job:", error);
-  }
-});
+//   catch(error) {
+//     console.log("Error while sending emails in cron job:", error);
+//   }
+// });
 
 
  
