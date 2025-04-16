@@ -1,17 +1,17 @@
 import './App.css';
-import {  Routes, Route, Navigate } from 'react-router-dom';
+import {  Routes, Route, Navigate, BrowserRouter } from 'react-router-dom';
 import Login from "./pages/login/login"
 import Signup from "./pages/signup/signup"
 import Home from "./pages/home/home.jsx"
 import AddBooks from './pages/addBooks/addBooks.jsx'
 import SidebarLayout from './layout/sidebarLayout.jsx';
-import Users from "./pages/Users/Users.js"
-import UserBooks from './pages/UserBooks/UserBooks.js';
+import Users from "./pages/Users/Users.jsx"
+import UserBooks from './pages/UserBooks/UserBooks.jsx';
 import Publications from './pages/Publications/Publications.jsx';
 
 function App() {
   return (
-    <>
+    <BrowserRouter>
     <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -26,7 +26,7 @@ function App() {
         </Route>
         
     </Routes>
-    </>
+    </BrowserRouter>
   );
 }
 

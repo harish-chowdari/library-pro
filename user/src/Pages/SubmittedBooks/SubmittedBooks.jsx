@@ -8,7 +8,7 @@ import { useParams } from "react-router-dom";
 
 const SubmittedBooks = () => {
   const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); 
   const [isPopUpOpen, setIsPopUpOpen] = useState(false);
   const [popUpText, setPopUpText] = useState("");
   const [feedbackTexts, setFeedbackTexts] = useState({});
