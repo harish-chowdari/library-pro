@@ -32,11 +32,11 @@ const CartItem = ({ item, removeFromCart, reserveBook, willUseBy, handleDateChan
         // const nearestDateRes = await axios.get(
         //   `reserved/nearest-will-use-by/${item?.id}`
         // );
-        const nearestDate = nearestDateRes.data.nearestWillUseBy;
+        // const nearestDate = nearestDateRes.data.nearestWillUseBy;
         
-        if (nearestDate) {
-          setAvailableDate(nearestDate); // Set date if it's valid
-        }
+        // if (nearestDate) {
+        //   setAvailableDate(nearestDate); // Set date if it's valid
+        // }
 
       } catch (error) {
         console.error('Error fetching reservation data:', error);

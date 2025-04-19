@@ -201,9 +201,9 @@ const Sidebar = () => {
             {filteredBooks.length > 0 && (
                 <div className="filtered-cards-container">
                     {filteredBooks.map((book) => (
-                        <div className='book-cards' key={book._id} onClick={() => handleBookClick(book._id)}>
+                        <div className='book-cards' key={book._id} onClick={() => handleBookClick(book.id)}>
                             <BookCard
-                                id={book._id}
+                                id={book.id}
                                 title={book.bookName}
                                 author={book.authorName}
                                 imageUrl={book.bookImage}

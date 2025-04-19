@@ -89,11 +89,11 @@ console.log(title);
 
       setIsOutOfStock(resCount >= numberOfCopies);
 
-      const nearestDateRes = await axios.get(
-        `reserved/nearest-will-use-by/${id}`
-      );
-      const nearestDate = nearestDateRes.data.nearestWillUseBy;
-      setNearestWillUseBy(nearestDate);
+    //   const nearestDateRes = await axios.get(
+    //     `reserved/nearest-will-use-by/${id}`
+    //   );
+    //   const nearestDate = nearestDateRes.data.nearestWillUseBy;
+    //   setNearestWillUseBy(nearestDate);
     } catch (error) {
       console.log(error);
     }
@@ -114,7 +114,7 @@ console.log(title);
     ? feedbacks.reduce((acc, feedback) => acc + feedback.rating, 0) / feedbacks?.length
     : 0;
 
-    console.log(id,'id');
+    // console.log(id,'id');
 
   return (
     <div className="book-card" title="View full details">
