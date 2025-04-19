@@ -1,377 +1,205 @@
+// controllers/reminderController.js
+
+const db         = require("../db");              // your mysql2 promise connection
 const nodemailer = require("nodemailer");
-const dotenv = require("dotenv");
-const cron = require("node-cron");
+const moment     = require("moment");
+const cron       = require("node-cron");
 
-const mongoose = require("mongoose");
+let isRunning = false;
 
+/**
+ * 1) Fetch all *overdue* reservations grouped by user.
+ */
+async function checkReserved() {
+  const today = moment.utc().format("YYYY-MM-DD");
+  const [rows] = await db.query(`
+    SELECT 
+      rb.userId      AS user_id,
+      u.name         AS user_name,
+      u.email        AS user_email,
+      rb.bookId      AS book_id,
+      b.bookName     AS book_name
+    FROM reserved_books rb
+    JOIN users u    ON u.id    = rb.userId
+    JOIN books b    ON b.id    = rb.bookId
+    WHERE DATE(rb.willUseBy) < ?
+  `, [today]);
 
-
-const EmailsSentSchema = require("../models/NodeMailerModel")
-const Reserved = require("../models/HistoryModel");
-const moment = require("moment"); // For date comparison
-const axios = require("axios");
-dotenv.config();
-
-
-
-
-async function getAllReserved(req, res) {
-  try {
-      const allReserved = await Reserved.find().populate("items.bookId").populate("userId", "-password");
-
-      if (!allReserved) {
-          return { noReservedFound: "Reserved not found" };
-      }
-
-      return allReserved;
-  } 
-  
-  catch (error) {
-      console.error(error);
+  const map = {};
+  for (const r of rows) {
+    if (!map[r.user_id]) {
+      map[r.user_id] = {
+        userId:   r.user_id,
+        userName: r.user_name,
+        userEmail:r.user_email,
+        books:    []
+      };
+    }
+    map[r.user_id].books.push({
+      bookId:   r.book_id,
+      bookName: r.book_name
+    });
   }
+  return Object.values(map);
 }
 
-
-
-
-const checkReserved = async () => { // This function doesn't need `req` or `res`
-  try {
-    const currentDate = moment.utc().format("YYYY-MM-DD");
-    
-    // Fetch all reserved books
-    const allReserve = await getAllReserved();
-
-    if (!Array.isArray(allReserve) || allReserve.length === 0) {
-      return { message: "No reserved books found" }; // Return a plain object
-    }
-
-    const matchingReservations = allReserve.map((reservation) => {
-      const matchingItems = reservation.items.filter(
-        (item) => moment.utc(item.willUseBy).format("YYYY-MM-DD") === currentDate
-      );
-
-      return {
-        userId: reservation.userId._id,
-        userName: reservation.userId.name,
-        userEmail: reservation.userId.email,
-        matchingItems,
-      };
-    }).filter((res) => res.matchingItems.length > 0);
-
-    if (matchingReservations.length > 0) {
-      return {
-        message: "Reservations found for today",
-        reservations: matchingReservations,
-      };
-    } 
-    
-   
-
-    else {
-      return { NoReservations: "No reservations found for today" }; // Handle no reservations case
-    }
-  } catch (error) {
-    console.error("Error while checking reservations:", error);
-    throw error; // Ensure errors propagate properly
+/**
+ * 2) Send reminders & log into emails/email_items.
+ */
+async function sendEmail() {
+  const dueList = await checkReserved();
+  if (dueList.length === 0) {
+    return { message: "No overdue reservations." };
   }
-};
 
-
-
-
-
-
-
-
-const sendEmail = async (req, res) => {
-  try {
-    // Fetch the reservations for today from the check-reservation endpoint
-    const reservationsResponse = await checkReserved();
-
-
-
-    const reservations = reservationsResponse.reservations;
-
-    if (!reservations || reservations.length === 0) {
-      
-      return { noReservations: "No reservations found for today." }
-      
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
     }
+  });
 
+  const today = moment.utc().format("YYYY-MM-DD");
+  for (const u of dueList) {
+    // Upsert an 'emails' row
+    const [r] = await db.query(`
+      INSERT INTO emails (user_id, created_date)
+      VALUES (?, ?)
+      ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)
+    `, [u.userId, today]);
+    const emailId = r.insertId;
 
-    if (!reservationsResponse || !reservationsResponse.reservations ) {
-      
-      return { error: "Failed to retrieve reservations." }
-    }
+    // Find already‐sent book IDs for today
+    const [sentRows] = await db.query(
+      `SELECT book_id FROM email_items WHERE email_id = ? AND created_date = ?`,
+      [emailId, today]
+    );
+    const sentBookIds = sentRows.map(r => r.book_id);
 
-    
+    // Filter only the newly overdue ones
+    const unsent = u.books.filter(b => !sentBookIds.includes(b.bookId));
+    if (unsent.length === 0) continue;
 
-    const config = {
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    };
-
-    const transporter = nodemailer.createTransport(config);
-
-    const currentDateStart = moment.utc().startOf("day").toDate();
-
-    for (const reservation of reservations) {
-      const { userEmail, userId, userName, matchingItems } = reservation;
-
-      // Find existing email history for the user on the current day
-      const existingRecord = await EmailsSentSchema.findOne({
-        userId,
-        "items.createdDate": { $gte: currentDateStart, $lt: moment.utc().endOf("day").toDate() },
-      });
-
-      let newBookIds = [];
-      if (existingRecord) {
-        // Get book IDs already stored in the existing record for the current date
-        const existingBookIds = existingRecord.items.map((item) => item.bookId.toString());
-
-        // Identify new book IDs in the matching items
-        newBookIds = matchingItems
-          .map((item) => item.bookId._id.toString())
-          .filter((bookId) => !existingBookIds.includes(bookId));
-      } else {
-        // If there's no existing record, consider all `matchingItems` as new
-        newBookIds = matchingItems.map((item) => item.bookId._id.toString());
-      }
-
-      if (newBookIds.length > 0) {
-        // Build the email content
-        const mailContent = `
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <title>Reminder: Books Due Today</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                background-color: #f7f7f7;
-                padding: 20px;
-              }
-              .container {
-                background-color: #ffffff;
-                border-radius: 5px;
-                padding: 20px;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-              }
-              h1 {
-                color: #333;
-              }
-              p {
-                color: #666;
-              }
-              .details {
-                background-color: #f0f0f0;
-                padding: 10px;
-                border-radius: 5px;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h1>Reminder</h1>
-              <p>Dear ${userName},</p>
-              <p>Today is the last day to return these books:</p>
-              <ul>
-                ${matchingItems
-                  .filter((item) => newBookIds.includes(item.bookId._id.toString()))
-                  .map((item) => `<li>${item.bookId.bookName}</li>`)
-                  .join("")}
-              </ul>
-            </div>
-          </body>
-          </html>
-        `;
-
-        const message = {
-          from: process.env.EMAIL_USER,
-          to: userEmail,
-          subject: "Reminder: Books Due Today",
-          html: mailContent,
-        };
-
-        // Send the email
-        await transporter.sendMail(message);
-
-        // Add new book IDs to the email history
-        if (existingRecord) {
-          // Update existing record
-          for (const bookId of newBookIds) {
-            existingRecord.items.push({
-              bookId,
-              createdDate: currentDateStart,
-            });
-          }
-          await existingRecord.save();
-        } else {
-          // Create new record if there's none for today
-          const newRecord = new EmailsSentSchema({
-            userId,
-            items: newBookIds.map((bookId) => ({
-              bookId,
-              createdDate: currentDateStart,
-            })),
-          });
-          await newRecord.save();
-        }
-      }
-    }
-
-    return { message: "Emails sent successfully." }
-  } catch (error) {
-    console.error("Error sending emails:", error);
-    return res.status(500).json({ error: "An error occurred while sending emails." });
-  }
-};
-
-
-
-
-// cron.schedule("10 * * * * *", async () => {
-//   try {
-
-//     const res = await sendEmail()
-
-//     if(res)
-//     {
-//       console.log(res)
-//       return
-//     } 
-
-//     console.log("If any Emails are there to send I have sent those emails.");
-
-//   } 
-  
-//   catch(error) {
-//     console.log("Error while sending emails in cron job:", error);
-//   }
-// });
-
-
- 
-
-
-const emailsSentHistory = async (req, res) => {
-  try {
-    const { userId, bookId } = req.body;
-
-    if (!userId || !bookId) {
-      return res.status(400).json({ error: "userId and bookId are required." });
-    }
-
-    // Define the current day's boundary
-    const currentDateStart = moment.utc().startOf("day").toDate();
-    const currentDateEnd = moment.utc().endOf("day").toDate();
-
-    // Find the record for the current day and check if the bookId already exists in the items array
-    const existingRecord = await EmailsSentSchema.findOne({
-      userId,
-      "items.createdDate": { $gte: currentDateStart, $lt: currentDateEnd },
+    // Build & send the email
+    const html = `
+      <h1>Overdue Reminder</h1>
+      <p>Dear ${u.userName},</p>
+      <p>The following book${unsent.length>1?'s are':' is'} now overdue:</p>
+      <ul>
+        ${unsent.map(b => `<li>${b.bookName}</li>`).join("")}
+      </ul>
+      <p>Please return ${unsent.length>1?'them':'it'} as soon as possible.</p>
+    `;
+    await transporter.sendMail({
+      from:    process.env.EMAIL_USER,
+      to:      u.userEmail,
+      subject: "Reminder: Overdue Books",
+      html
     });
 
-    if (existingRecord) {
-      const bookAlreadyExists = existingRecord.items.some(
-        (item) => item.bookId.toString() === bookId
-      );
-
-      if (bookAlreadyExists) {
-        return res.status(409).json({
-          error: "An email for this bookId and userId has already been sent today.",
-        });
-      }
-
-      // If not a duplicate, add the new bookId to the items array
-      existingRecord.items.push({ bookId, createdDate: currentDateStart });
-
-      await existingRecord.save();
-
-      return res.status(200).json({
-        message: "Email record updated successfully.",
-        existingRecord,
-      });
-    } else {
-      // If no record exists for the current date, create a new one
-      const newRecord = new EmailsSentSchema({
-        userId,
-        items: [{ bookId, createdDate: currentDateStart }],
-      });
-
-      await newRecord.save();
-
-      return res.status(201).json({
-        message: "Email record created successfully.",
-        newRecord,
-      });
-    }
-  } catch (error) {
-    console.error("Error while updating/creating email record:", error);
-    return res.status(500).json({ error: "An error occurred while processing the request." });
+    // Log each new one into email_items
+    const values = unsent
+      .map(b => `(${emailId}, ${b.bookId}, '${today}')`)
+      .join(",");
+    await db.query(`
+      INSERT IGNORE INTO email_items (email_id, book_id, created_date)
+      VALUES ${values}
+    `);
   }
-};
 
-  
+  return { message: `Sent ${dueList.length} overdue reminder(s).` };
+}
 
+/**
+ * 3) Manual email‑sent entry (mirrors your emailsSentHistory)
+ */
+async function emailsSentHistory(req, res) {
+  const { userId, bookId } = req.body;
+  if (!userId || !bookId) {
+    return res.status(400).json({ error: "userId and bookId required" });
+  }
 
+  const today = moment.utc().format("YYYY-MM-DD");
+  const [r] = await db.query(`
+    INSERT INTO emails (user_id, created_date)
+    VALUES (?, ?)
+    ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)
+  `, [userId, today]);
+  const emailId = r.insertId;
 
+  const [dup] = await db.query(
+    `SELECT 1 FROM email_items WHERE email_id = ? AND book_id = ? AND created_date = ?`,
+    [emailId, bookId, today]
+  );
+  if (dup.length) {
+    return res.status(409).json({ error: "Already recorded today." });
+  }
 
-    const getEmailsHistory = async (req, res) => {
-        try {
-          // Get the current date in UTC
-          const currentDate = moment.utc().format("YYYY-MM-DD");
-          const startOfDay = moment.utc(currentDate).startOf("day").toDate();
-          const endOfDay = moment.utc(currentDate).endOf("day").toDate();
-      
-          // Retrieve all email records that contain at least one item with a matching createdDate
-          const emailHistory = await EmailsSentSchema.find({
-            "items.createdDate": { $gte: startOfDay, $lt: endOfDay },
-          });
-      
-          if (emailHistory.length === 0) {
-            return res.status(404).json({ message: "No email history found for today." });
-          }
-      
-          // Filter the items within each record to include only those with a createdDate that matches the current date
-          const filteredEmailHistory = emailHistory.map((record) => {
-            const matchingItems = record.items.filter(
-              (item) => moment.utc(item.createdDate).format("YYYY-MM-DD") === currentDate
-            );
-      
-            return {
-              ...record.toObject(),
-              items: matchingItems,
-            };
-          });
-      
-          // If all records have no matching items, return 404
-          const allItemsEmpty = filteredEmailHistory.every((record) => record.items.length === 0);
-          if (allItemsEmpty) {
-            return res.status(404).json({ message: "No email history found for today." });
-          }
-      
-          return res.status(200).json({
-            message: "Email history retrieved successfully.",
-            data: filteredEmailHistory,
-          });
-        } catch (error) {
-          console.error("Error fetching email history:", error);
-          return res.status(500).json({ error: "An error occurred while fetching email history." });
-        }
+  await db.query(
+    `INSERT INTO email_items (email_id, book_id, created_date)
+     VALUES (?, ?, ?)`,
+    [emailId, bookId, today]
+  );
+  return res.json({ message: "Recorded." });
+}
+
+/**
+ * 4) Fetch today's email history
+ */
+async function getEmailsHistory(req, res) {
+  const today = moment.utc().format("YYYY-MM-DD");
+  const [rows] = await db.query(`
+    SELECT
+      e.user_id    AS userId,
+      u.name       AS userName,
+      u.email      AS userEmail,
+      ei.book_id   AS bookId,
+      b.bookName   AS bookName
+    FROM emails e
+    JOIN email_items ei ON ei.email_id = e.id
+    JOIN users u        ON u.id = e.user_id
+    JOIN books b        ON b.id = ei.book_id
+    WHERE e.created_date = ?
+  `, [today]);
+
+  if (!rows.length) {
+    return res.status(404).json({ message: "No email history for today." });
+  }
+
+  const map = {};
+  for (const r of rows) {
+    if (!map[r.userId]) {
+      map[r.userId] = {
+        userId:    r.userId,
+        userName:  r.userName,
+        userEmail: r.userEmail,
+        books:     []
       };
-      
-      
+    }
+    map[r.userId].books.push({
+      bookId:   r.bookId,
+      bookName: r.bookName
+    });
+  }
 
-      
-           
+  return res.json(Object.values(map));
+}
 
-
-
+// 5) Cron: run every 5 seconds, but thanks to our INSERT_IGNORE logic,
+// it will actually only email *new* overdue items once per item per day.
+cron.schedule("*/5 * * * * *", async () => {
+  if (isRunning) return;
+  isRunning = true;
+  try {
+    const result = await sendEmail();
+    console.log("Reminder job:", result);
+  } catch (err) {
+    console.error("Reminder job error:", err);
+  } finally {
+    isRunning = false;
+  }
+});
 
 module.exports = {
   checkReserved,

@@ -21,42 +21,37 @@ const ReservedBooks = () => {
     return daysDifference;
   };
 
-  
-  
   const displayFineOrRemaining = (days, fine) => {
     // Extract numeric part of fine using regular expression if fine is defined
     const fineAmount = fine?.match(/\d+(\.\d+)?/);
-  
+
     if (days < 0 && fineAmount) {
       const numberOfDaysExceeded = Math.abs(days);
       const totalFine = parseFloat(fineAmount[0]) * numberOfDaysExceeded;
       // Round totalFine to two decimal places
       const roundedFine = totalFine.toFixed(2);
       return <span style={{ color: "red" }}>  {numberOfDaysExceeded} days exceeded. <br/> Total fine: {roundedFine}$</span>;
-    } 
+    }
 
     else if (days < 0 && !fineAmount) {
       return <span>Fine Paid</span>;
     }
-    
+
     else if (days === 0) {
       return <span>Today is the last day to use this book</span>;
-    } 
-    
+    }
+
     else {
       return <span>{days} days remaining</span>;
     }
   };
-  
-  
 
   const fetchBooksReserved = async () => {
     try {
       const res = await axios.get(`reserved/books-reserved/${userId}`);
-    console.log(res.data.booksReserved,'res');
+      console.log(res.data.booksReserved, 'res');
       if (res.data.booksReserved) {
         setBooksReserved(res.data.booksReserved);
-        console.log(res.data.booksReserved)
         setLoading(false);
       } else {
         setPopUpText("No reserved books found.");
@@ -67,13 +62,10 @@ const ReservedBooks = () => {
       console.error('Error fetching books reserved:', error);
     }
   };
-  
 
   useEffect(() => {
     fetchBooksReserved();
   }, [userId]);
-
-
 
   const submitBook = async (bookId) => {
     try {
@@ -84,29 +76,13 @@ const ReservedBooks = () => {
 
       // Handle response and display pop-up accordingly
       if (updateSubmitStatusResponse.data.updatedReservation) {
-        console.log(updateSubmitStatusResponse.data.updatedReservation);
-        // Update the submitStatus in the state
-        // setBooksReserved(prevBooks => ({
-        //   ...prevBooks,
-        //   items: prevBooks?.map(item => {
-        //     if (item.bookId === bookId) {
-        //       return { ...item, submitStatus: "Submitting" };
-        //     }
-        //     return item;
-        //   })
-        // }));
-        
-
         setPopUpText(updateSubmitStatusResponse.data.updatedReservation);
         setIsPopUpOpen(true);
       } else {
-        console.log(updateSubmitStatusResponse.data.alreadySubmitted);
-
         setPopUpText(updateSubmitStatusResponse.data.alreadySubmitted);
         setIsPopUpOpen(true);
       }
       fetchBooksReserved();
-
 
     } catch (error) {
       console.error('Error submitting book:', error);
@@ -120,12 +96,12 @@ const ReservedBooks = () => {
   return (
     <div className="history-container">
       <div className='history-img'></div>
-       <h2>Reserved Books</h2>
+      <h2>Reserved Books</h2>
       {loading ? (
-        <Loader /> 
+        <Loader />
       ) : booksReserved ? (
         <div className='history-division'>
-          {booksReserved?.items?.length === 0 ? (
+          {booksReserved?.length === 0 ? (
             <h2>No reserved books found.</h2>
           ) : (
             <div className='historyitems-format-main history-headings'>
@@ -138,42 +114,41 @@ const ReservedBooks = () => {
               <h3>Days</h3>
             </div>
           )}
-          
+
           {booksReserved?.map((book, index) => (
-  <div className='Main-div' key={index}>
-    <div className="historyitems-format-main history-items-format">
-      {book ? (
-        <>
-          <img src={book.bookImage} alt={book.bookName} />
-          <p>{book.bookName}</p>
-          <p>{book.authorName}</p>
-        </> 
-        )
-        :
-       ( 
-        <> 
-          <p>Book Image</p>
-          <p>Book Name</p>          
-          <p>Author Name</p>
-        </>
-        )}
-      <p>{book.createdDate?.slice(0, 10)}</p>
-      <p>{book.willUseBy?.slice(0, 10)}</p>
-      {book.submitStatus === "Submitting" ? <button style={{cursor:"not-allowed"}}>Requested</button> : <button onClick={() => submitBook(book.bookId)}>Submit</button>}
-   
-      <div className='book-fine'>
-        <p className='usebyDays'>{displayFineOrRemaining(daysExceededOrRemaining(book.willUseBy), book.fine )}</p>
-      </div>
-      
-    </div> 
-  </div>
-))} 
+            <div className='Main-div' key={index}>
+              <div className="historyitems-format-main history-items-format">
+                {book ? (
+                  <>
+                    <img src={book.bookImage} alt={book.bookName} />
+                    <p>{book.bookName}</p>
+                    <p>{book.authorName}</p>
+                  </> 
+                )
+                :
+                ( 
+                  <> 
+                    <p>Book Image</p>
+                    <p>Book Name</p>          
+                    <p>Author Name</p>
+                  </>
+                )}
+                <p>{book.createdDate?.slice(0, 10)}</p>
+                <p>{book.willUseBy?.slice(0, 10)}</p>
+                {book.submitStatus === "Submitting" ? <button style={{cursor:"not-allowed"}}>Requested</button> : <button onClick={() => submitBook(book.bookId)}>Submit</button>}
+               
+                <div className='book-fine'>
+                  <p className='usebyDays'>{displayFineOrRemaining(daysExceededOrRemaining(book.willUseBy), book.fine )}</p>
+                </div>
+              </div> 
+            </div>
+          ))} 
 
         </div>
       ) : (
         <h2>No reserved books found.</h2>
       )}
-  
+
       <PopUp
         isOpen={isPopUpOpen}
         close={() => setIsPopUpOpen(false)}
@@ -181,7 +156,6 @@ const ReservedBooks = () => {
       /> 
     </div>
   );
-  
 };
 
 export default ReservedBooks;

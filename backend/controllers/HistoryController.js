@@ -62,41 +62,51 @@ async function getBookCopiesCount(req, res) {
     }
 }
 
+
 async function getReserved(req, res) {
-    try {
-        const { userId } = req.params;
-
-        if (!userId) {
-            return res.status(400).json({ message: "userId is required" });
-        }
-
-        const [booksReserved] = await connection.query(
-            `SELECT 
-                reserved_books.*, 
-                books.id as bookId,
-                books.bookName, 
-                books.authorName, 
-                books.description,
-                books.isbnNumber,
-                books.publishedDate,
-                books.bookImage,
-                books.numberOfCopies
-             FROM reserved_books 
-             JOIN books ON reserved_books.bookId = books.id 
-             WHERE reserved_books.userId = ?`,
-            [userId]
-        );
-
-        if (booksReserved.length === 0) {
-            return res.status(200).json({ message: "Reserved not found" });
-        }
-
-        res.json({ booksReserved });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: error.message });
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
     }
+
+    // Pull reserved_books.*, plus book details including willUseBy
+    const [booksReserved] = await connection.query(
+        `
+            SELECT 
+            rb.userId,
+            rb.bookId,
+            rb.fine,
+            DATE_FORMAT(rb.createdDate, '%Y-%m-%d')        AS createdDate,
+            DATE_FORMAT(rb.willUseBy, '%Y-%m-%d')          AS willUseBy,
+            rb.submitStatus,
+            b.bookName,
+            b.authorName,
+            b.description,
+            b.isbnNumber,
+            b.publishedDate,
+            b.bookImage,
+            b.numberOfCopies
+            FROM reserved_books rb
+            JOIN books b
+            ON rb.bookId = b.id
+            WHERE rb.userId = ?
+        `,
+        [userId]
+    );
+
+    if (booksReserved.length === 0) {
+      return res.status(200).json({ message: "No reserved books found for this user." });
+    }
+
+    res.json({ booksReserved });
+  } catch (error) {
+    console.error("getReserved error:", error);
+    res.status(500).json({ message: error.message });
+  }
 }
+
+
 
 
 const getAllReserved = async (req, res) => {

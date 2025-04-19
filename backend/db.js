@@ -74,7 +74,7 @@ async function initDatabase() {
 
     // submission_items
     await db.query(`
-            CREATE TABLE IF NOT EXISTS submission_items (
+        CREATE TABLE IF NOT EXISTS submission_items (
             id INT AUTO_INCREMENT PRIMARY KEY,
             submissionId INT NOT NULL,
             bookId INT NOT NULL,
@@ -103,6 +103,32 @@ async function initDatabase() {
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )`);
+
+
+    // emails: one per user per day
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS emails (
+            id           INT AUTO_INCREMENT PRIMARY KEY,
+            user_id      INT NOT NULL,
+            created_date DATE NOT NULL,
+            UNIQUE KEY uq_emails_user_date (user_id, created_date),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) 
+    `);
+
+    // email_items: which book reminders have been sent (unique per email, book, date)
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS email_items (
+            id           INT AUTO_INCREMENT PRIMARY KEY,
+            email_id     INT NOT NULL,
+            book_id      INT NOT NULL,
+            created_date DATE NOT NULL,
+            UNIQUE KEY uq_items_email_book_date (email_id, book_id, created_date),
+            FOREIGN KEY (email_id) REFERENCES emails(id) ON DELETE CASCADE,
+            FOREIGN KEY (book_id)  REFERENCES books(id) ON DELETE CASCADE
+        )
+    `);
+  
 
 
     console.log("Tables ensured."); 
