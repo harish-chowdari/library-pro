@@ -14,11 +14,13 @@ async function checkReserved() {
   const today = moment.utc().format("YYYY-MM-DD");
   const [rows] = await db.query(`
     SELECT 
-      rb.userId      AS user_id,
-      u.name         AS user_name,
-      u.email        AS user_email,
-      rb.bookId      AS book_id,
-      b.bookName     AS book_name
+      rb.userId        AS user_id,
+      u.name           AS user_name,
+      u.email          AS user_email,
+      rb.bookId        AS book_id,
+      b.bookName       AS book_name,
+      rb.fine          AS fine,
+      rb.willUseBy     AS will_use_by
     FROM reserved_books rb
     JOIN users u    ON u.id    = rb.userId
     JOIN books b    ON b.id    = rb.bookId
@@ -29,15 +31,17 @@ async function checkReserved() {
   for (const r of rows) {
     if (!map[r.user_id]) {
       map[r.user_id] = {
-        userId:   r.user_id,
-        userName: r.user_name,
-        userEmail:r.user_email,
-        books:    []
+        userId:    r.user_id,
+        userName:  r.user_name,
+        userEmail: r.user_email,
+        books:     []
       };
     }
     map[r.user_id].books.push({
-      bookId:   r.book_id,
-      bookName: r.book_name
+      bookId:     r.book_id,
+      bookName:   r.book_name,
+      fine:       parseFloat(r.fine),
+      willUseBy:  moment(r.will_use_by).format("YYYY-MM-DD")
     });
   }
   return Object.values(map);
@@ -48,7 +52,7 @@ async function checkReserved() {
  */
 async function sendEmail() {
   const dueList = await checkReserved();
-  if (dueList.length === 0) {
+  if (!dueList.length) {
     return { message: "No overdue reservations." };
   }
 
@@ -77,9 +81,21 @@ async function sendEmail() {
     );
     const sentBookIds = sentRows.map(r => r.book_id);
 
-    // Filter only the newly overdue ones
+    // Only the newly overdue ones
     const unsent = u.books.filter(b => !sentBookIds.includes(b.bookId));
-    if (unsent.length === 0) continue;
+    if (!unsent.length) continue;
+
+    // Compute per‐book days overdue & fine, and total fine
+    let totalFine = 0;
+    const listItems = unsent.map(b => {
+      const daysOverdue = moment(today).diff(b.willUseBy, "days");
+      const bookFine    = (daysOverdue * b.fine).toFixed(2);
+      totalFine += parseFloat(bookFine);
+      return `<li>
+        ${b.bookName} — ${daysOverdue} day${daysOverdue>1?'s':''} overdue,
+        fine: $${bookFine}
+      </li>`;
+    }).join("");
 
     // Build & send the email
     const html = `
@@ -87,8 +103,9 @@ async function sendEmail() {
       <p>Dear ${u.userName},</p>
       <p>The following book${unsent.length>1?'s are':' is'} now overdue:</p>
       <ul>
-        ${unsent.map(b => `<li>${b.bookName}</li>`).join("")}
+        ${listItems}
       </ul>
+      <p><strong>Total fine owing: $${totalFine.toFixed(2)}</strong></p>
       <p>Please return ${unsent.length>1?'them':'it'} as soon as possible.</p>
     `;
     await transporter.sendMail({
@@ -112,7 +129,7 @@ async function sendEmail() {
 }
 
 /**
- * 3) Manual email‑sent entry (mirrors your emailsSentHistory)
+ * 3) Manual email‑sent entry
  */
 async function emailsSentHistory(req, res) {
   const { userId, bookId } = req.body;
@@ -138,7 +155,8 @@ async function emailsSentHistory(req, res) {
 
   await db.query(
     `INSERT INTO email_items (email_id, book_id, created_date)
-     VALUES (?, ?, ?)`,
+     VALUES (?, ?, ?)
+    `,
     [emailId, bookId, today]
   );
   return res.json({ message: "Recorded." });
@@ -186,8 +204,7 @@ async function getEmailsHistory(req, res) {
   return res.json(Object.values(map));
 }
 
-// 5) Cron: run every 5 seconds, but thanks to our INSERT_IGNORE logic,
-// it will actually only email *new* overdue items once per item per day.
+// 5) Cron: run every 5 seconds, but only new overdue items get emailed once per item per day
 cron.schedule("*/5 * * * * *", async () => {
   if (isRunning) return;
   isRunning = true;

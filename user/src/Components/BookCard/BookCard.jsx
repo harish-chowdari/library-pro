@@ -132,11 +132,11 @@ console.log(title);
         </Link>
       </div>
       <div className="available-date">
-        {isOutOfStock && (
+        {/* {isOutOfStock && (
           <p>
             <strong>Available On:</strong> {nearestWillUseBy ? nearestWillUseBy.slice(0, 10) : 'N/A'}
           </p>
-        )}
+        )} */}
       </div>  
             <div className='book-rating'>
             <p>

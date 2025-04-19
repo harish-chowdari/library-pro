@@ -29,9 +29,9 @@ const CartItem = ({ item, removeFromCart, reserveBook, willUseBy, handleDateChan
         setIsBookReserved(isReserved);
 
 
-        const nearestDateRes = await axios.get(
-          `reserved/nearest-will-use-by/${item?.id}`
-        );
+        // const nearestDateRes = await axios.get(
+        //   `reserved/nearest-will-use-by/${item?.id}`
+        // );
         const nearestDate = nearestDateRes.data.nearestWillUseBy;
         
         if (nearestDate) {
@@ -89,7 +89,7 @@ const CartItem = ({ item, removeFromCart, reserveBook, willUseBy, handleDateChan
           )}
  
           {isOutOfStock || isBookReserved ? 
-            <p>Available On: {availableDate ? availableDate.slice(0, 10) : 'N/A'}</p>
+            <p>Out of Stock</p>
             :              
             <input className='use-by-cart' type='date' value={willUseBy || ''} onChange={handleDateChange} required />
 }
