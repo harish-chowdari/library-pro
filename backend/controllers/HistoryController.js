@@ -73,9 +73,12 @@ async function getReserved(req, res) {
         const [booksReserved] = await connection.query(
             `SELECT 
                 reserved_books.*, 
+                books.id as bookId,
                 books.bookName, 
                 books.authorName, 
                 books.description,
+                books.isbnNumber,
+                books.publishedDate,
                 books.bookImage,
                 books.numberOfCopies
              FROM reserved_books 
@@ -96,22 +99,56 @@ async function getReserved(req, res) {
 }
 
 
-async function getAllReserved(req, res) {
+const getAllReserved = async (req, res) => {
     try {
-        const [allReserved] = await connection.query(
-            "SELECT reserved_books.*, users.name AS userName, books.bookName AS bookName FROM reserved_books JOIN users ON reserved_books.userId = users.id JOIN books ON reserved_books.bookId = books.id"
-        );
-
-        if (allReserved.length === 0) {
-            return res.status(200).json({ noReservedFound: "Reserved not found" });
+      const [rows] = await connection.query(`
+        SELECT 
+          u.id as userId,
+          u.name as userName,
+          u.email,
+          b.id as bookId,
+          b.bookName,
+          rb.fine,
+          rb.createdDate,
+          rb.willUseBy,
+          rb.submitStatus
+        FROM reserved_books rb
+        JOIN users u ON rb.userId = u.id
+        JOIN books b ON rb.bookId = b.id
+        ORDER BY u.id, rb.createdDate DESC
+      `);
+  
+      const result = [];
+  
+      const userMap = new Map();
+  
+      for (const row of rows) {
+        if (!userMap.has(row.userId)) {
+          userMap.set(row.userId, {
+            userId: row.userId,
+            userName: row.userName,
+            email: row.email,
+            reservedBooks: []
+          });
         }
-
-        res.json({ allReserved });
+  
+        userMap.get(row.userId).reservedBooks.push({
+          bookId: row.bookId,
+          bookName: row.bookName,
+          fine: row.fine,
+          createdDate: row.createdDate,
+          willUseBy: row.willUseBy,
+          submitStatus: row.submitStatus
+        });
+      }
+  
+      res.status(200).json([...userMap.values()]);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: error.message });
+      console.error(error);
+      res.status(500).json({ message: error.message });
     }
-}
+  };
+  
 
 async function getAllReservedToGroupBookId(req, res) {
     try {
@@ -231,7 +268,8 @@ async function updateReservedBook(req, res) {
 
 async function removeFine(req, res) {
     try {
-        const { userId, bookId } = req.params;
+        const {bookId} = req.body;
+        const { userId } = req.params;
 
         if (!userId || !bookId) {
             return res.status(400).json({ message: "userId and bookId are required" });

@@ -21,8 +21,9 @@ const SubmittedBooks = () => {
     const fetchSubmissions = async () => {
       try {
         const response = await axios.get(`submit/get-submissions/${userId}`);
-        if (response.data?.submissions?.items) {
-          setSubmissions(response.data.submissions.items);
+        console.log(response.data.items)
+        if (response.data?.items) {
+          setSubmissions(response.data.items);
           setLoading(false);
         } else {
           setPopUpText("No submissions found");

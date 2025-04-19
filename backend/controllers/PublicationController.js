@@ -1,34 +1,24 @@
-const PublicationSchema = require("../models/PublicationModel");
+const connection = require("../db");
 const S3 = require("../s3");
 
-// Function to upload a book publication
-const BookPublication = async (req, res) => { 
+const BookPublication = async (req, res) => {
     try {
-        console.log('Req Body:', req.body);
+        const { bookName, authorName, isbnNumber, publishedDate, description } = req.body;
 
-        // Upload the book image to S3 and get the response
-        const response = await S3.uploadFile(
+        const s3Upload = await S3.uploadFile(
             process.env.AWS_BUCKET_NAME,
             req.files.bookImage[0]
         );
 
-        // Destructure the details from the request body
-        const { bookName, authorName, isbnNumber, publishedDate, description } = req.body;
+        const bookImage = s3Upload.Location;
 
-        // Create a new publication document
-        const book = new PublicationSchema({
-            bookName,
-            authorName,
-            isbnNumber,
-            publishedDate,
-            bookImage: response.Location,
-            description,
-        });
+        await connection.query(
+            `INSERT INTO publications 
+            (bookName, authorName, isbnNumber, publishedDate, bookImage, description) 
+            VALUES (?, ?, ?, ?, ?, ?)`,
+            [bookName, authorName, isbnNumber, publishedDate, bookImage, description]
+        );
 
-        // Save the document to the database
-        await book.save();
-
-        // Respond with a success message
         res.status(201).json({ message: "Book added successfully" });
     } catch (error) {
         console.error("Error adding book:", error);
@@ -36,45 +26,32 @@ const BookPublication = async (req, res) => {
     }
 };
 
-// Function to get all book publications
 const getPublications = async (req, res) => {
     try {
-        // Fetch all publications from the database
-        const publications = await PublicationSchema.find({});
-
-        // Respond with the list of publications
-        res.status(200).json(publications);
+        const [rows] = await connection.query("SELECT * FROM publications ORDER BY createdAt DESC");
+        res.status(200).json(rows);
     } catch (error) {
         console.error("Error fetching publications:", error);
-        res.status(500).json({ message: error.message });
-    } 
-};
-
-
-
-const deletePublication = async (req, res) => {
-    try {
-
-        const { id } = req.params;
-
-        const publication = await PublicationSchema.findByIdAndDelete(id);
-
-        if (!publication) {
-            return res.status(404).json({ message: "Publication not found" });
-        }
-        
-        res.status(200).json({ message: "Publication deleted successfully" });
-    
-    } 
-    
-    catch (error) {
-        console.error("Error deleting publication:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
+const deletePublication = async (req, res) => {
+    try {
+        const { id } = req.params;
 
+        const [result] = await connection.query("DELETE FROM publications WHERE id = ?", [id]);
 
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Publication not found" });
+        }
+
+        res.status(200).json({ message: "Publication deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting publication:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
 
 module.exports = {
     BookPublication,

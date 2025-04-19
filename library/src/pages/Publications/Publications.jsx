@@ -53,7 +53,7 @@ const Publications = () => {
   };
 
   const handleApprove = async (id) => {
-    const fineAndCopiesData = fineAndCopies[activePublication._id] || {};
+    const fineAndCopiesData = fineAndCopies[activePublication.id] || {};
     const { fine, numberOfCopies } = fineAndCopiesData;
 
     if (!fine || !numberOfCopies) {
@@ -139,15 +139,15 @@ const Publications = () => {
                 <input
                   type="text"
                   placeholder="Fine per day in $"
-                  onChange={(e) => handleInputChange(activePublication._id, 'fine', e.target.value)}
+                  onChange={(e) => handleInputChange(activePublication.id, 'fine', e.target.value)}
                 />
                 <input
                   type="number"
                   placeholder="Number of Copies"
                   min="1"
-                  onChange={(e) => handleInputChange(activePublication._id, 'numberOfCopies', e.target.value)}
+                  onChange={(e) => handleInputChange(activePublication.id, 'numberOfCopies', e.target.value)}
                 />
-                <button onClick={()=>handleApprove(activePublication._id)}>Approve</button>
+                <button onClick={()=>handleApprove(activePublication.id)}>Approve</button>
               </div>
               <div
                 className={`popup-backdrop show`}

@@ -1,73 +1,106 @@
-const Submission = require("../models/Submission");
+const db = require('../db');
 
-async function addToSubmit(req, res) {
-    try {
-        const { userId, bookId, bookName, authorName, isbnNumber, 
-            publishedDate, bookImage, description,submittedOn } = req.body;
+const addToSubmit = async (req, res) => {
+  const {
+    userId,
+    bookId, 
+    bookName,
+    authorName,
+    isbnNumber,
+    publishedDate,
+    bookImage,
+    description,
+    submittedOn
+  } = req.body;
 
-        if (!userId || !bookId || !bookName) {
-            return res.status(400).json({ message: "userId, bookId, and bookName are required" });
-        }  
- 
-        let booksSubmitted = await Submission.findOne({ userId });
- 
-        if (!booksSubmitted) {
-            booksSubmitted = new Submission({
-                userId,
-                items: [{ bookId, bookName, authorName, isbnNumber, 
-                    publishedDate, bookImage, description, submittedOn }]
-            });
-        } 
-        
-        else {
-            // Check if the bookId already exists in the Submission
-            const existingBookIndex = booksSubmitted.items.findIndex(item => item.bookId.toString() === bookId);
-            if (existingBookIndex !== -1) {
-                return res.status(200).json({ alreadySubmitted: "Book already added to submission" });
-            }
+  if (!userId || !bookId || !bookName) {
+    return res.status(400).json({ message: "userId, bookId, and bookName are required" });
+  }
 
-            booksSubmitted.items.push({ bookId, bookName, authorName, isbnNumber, 
-                publishedDate, bookImage, description });
-        }
+  try {
+    const [existingSubmission] = await db.query(
+      `SELECT id FROM submissions WHERE userId = ? LIMIT 1`, [userId]
+    );
 
-        await booksSubmitted.save();
-        return res.json({ booksSubmitted, submitionSuccess: "This book is submitted" });
-    } 
-     
-    
-    catch (error) {
-        console.error(error);
-        res.status(500).json({ message: error.message });
+    let submissionId;
+
+    if (existingSubmission.length === 0) {
+      const [inserted] = await db.query(
+        `INSERT INTO submissions (userId) VALUES (?)`, [userId]
+      );
+      submissionId = inserted.insertId;
+    } else {
+      submissionId = existingSubmission[0].id;
     }
-}
+
+    const [existingItem] = await db.query(
+      `SELECT id FROM submission_items WHERE submissionId = ? AND bookId = ? LIMIT 1`,
+      [submissionId, bookId]
+    );
+
+    if (existingItem.length > 0) {
+      return res.status(200).json({ alreadySubmitted: "Book already added to submission" });
+    }
+
+    await db.query(
+      `INSERT INTO submission_items (submissionId, bookId, bookName, authorName, isbnNumber, publishedDate, bookImage, description, submittedOn) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        submissionId,
+        bookId,
+        bookName,
+        authorName,
+        isbnNumber,
+        publishedDate,
+        bookImage,
+        description,
+        submittedOn || new Date()
+      ]
+    );
+
+    return res.json({ submitionSuccess: "This book is submitted" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 
 
-async function getSubmissionsByUserId(req, res) {
+const getSubmissionsByUserId = async (req, res) => {
+    const { userId } = req.params;
+  
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+  
     try {
-        const { userId } = req.params;
-
-        if (!userId) {
-            return res.status(400).json({ message: "userId is required" });
-        }
-
-        const submissions = await Submission.findOne({ userId });
-
-        if (!submissions) {
-            return res.status(200).json({ message: "Submissions not found for the user" });
-        }
-
-        return res.json({ submissions });
+      const [submission] = await db.query(
+        `SELECT id FROM submissions WHERE userId = ? LIMIT 1`,
+        [userId]
+      );
+  
+      if (submission.length === 0) {
+        return res.status(200).json({ message: "Submissions not found for the user" });
+      }
+  
+      const submissionId = submission[0].id;
+  
+      const [items] = await db.query(
+        `SELECT bookId, bookName, authorName, isbnNumber, publishedDate, bookImage, description, submittedOn FROM submission_items WHERE submissionId = ?`,
+        [submissionId]
+      );
+  
+      return res.json({ userId, submissionId, items });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Internal server error" });
+      console.error(error);
+      return res.status(500).json({ message: error.message });
     }
-}
-
+  };
+  
 
 
 
 module.exports = {
-    addToSubmit,
-    getSubmissionsByUserId
-}; 
+  addToSubmit,
+  getSubmissionsByUserId
+};

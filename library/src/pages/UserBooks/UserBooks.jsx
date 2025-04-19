@@ -31,7 +31,8 @@ const UserBooks = () => {
   const fetchUserBooks = async () => {
     try {
       const res = await axios.get(`reserved/books-reserved/${userId}`);
-      setUserBooks(res.data.booksReserved.items || []);
+      console.log(res.data)
+      setUserBooks(res.data.booksReserved || []);
       console.log(res.data)
     } catch (error) {
       console.error('Error fetching user books:', error);
@@ -53,23 +54,34 @@ const UserBooks = () => {
   };
 
   // Function to submit a book
-  const submitBook = async (bookId, _id) => {
+  const submitBook = async (bookId, bookid) => {
     try {
       setLoading(true);
 
       // Fetch the book details from userBooks using bookId
-      const book = userBooks.find(item => item._id === bookId);
+      const book = userBooks.find(item => item.bookId === bookid);
 
-      // Call the endpoint to submit the book
+      console.log({
+        userId,
+        bookId: book.bookId,
+        bookName: book.bookName, 
+        authorName: book.authorName,
+        isbnNumber: book.isbnNumber,
+        publishedDate: book.publishedDate,
+        bookImage: book.bookImage,
+        description: book.description
+      },'book')
+
+    //   Call the endpoint to submit the book
       const submitResponse = await axios.post('submit/submit-book', {
         userId,
-        bookId: book.bookId._id,
-        bookName: book.bookId.bookName, 
-        authorName: book.bookId.authorName,
-        isbnNumber: book.bookId.isbnNumber,
-        publishedDate: book.bookId.publishedDate,
-        bookImage: book.bookId.bookImage,
-        description: book.bookId.description
+        bookId: book.bookId,
+        bookName: book.bookName, 
+        authorName: book.authorName,
+        isbnNumber: book.isbnNumber,
+        publishedDate: book.publishedDate,
+        bookImage: book.bookImage,
+        description: book.description
       });
 
       // Handle response and display pop-up accordingly
@@ -91,7 +103,7 @@ const UserBooks = () => {
       
 
       // Placeholder for deleting the book from the reservation
-      await axios.post('reserved/remove-from-reserved', { userId, _id });
+      await axios.post('reserved/remove-from-reserved', { userId, bookId: bookid });
 
       fetchUserBooks(); 
       
@@ -190,18 +202,18 @@ const UserBooks = () => {
             {userBooks.map((book, index) => (
               <div className='user-books-main-div' key={index}>
                 <div className="user-books-format-main user-books-items-format">
-                  <img src={book.bookId.bookImage} alt={book.bookName} />
-                  <p>{book.bookId.bookName}</p>
-                  <p>{book.bookId.authorName}</p>
+                  <img src={book.bookImage} alt={book.bookName} />
+                  <p>{book.bookName}</p>
+                  <p>{book.authorName}</p>
                   <p>{book.createdDate.slice(0, 10)}</p>
                   <p>{book.willUseBy.slice(0, 10)}</p>
                   <p className='user-books-fine'>{displayFineOrRemaining(daysExceededOrRemaining(book.willUseBy), book.fine)}</p>
                   
-                  <button onClick={() => removeFine(book.bookId._id)}>Collect</button>
+                  <button onClick={() => removeFine(book.bookId)}>Collect</button>
                   
                   
                   {book.submitStatus === "Submitting" ? 
-                    <button onClick={() => submitBook(book._id, book._id)}>Submit</button>
+                    <button onClick={() => submitBook(book?.bookId, book?.bookId)}>Submit</button>
                     : ""
                   }
                 </div>

@@ -12,52 +12,58 @@ const ReservedUsers = () => {
 
   useEffect(() => {
     const fetchReservedUsers = async () => {
-      try {
-        const res = await axios.get('reserved/all-reserved-books');
-
-        if (Array.isArray(res.data.allReserved)) {
-          const users = res.data.allReserved
-            .filter((reservedItem) => reservedItem.userId) // Ensure userId exists
-            .map((reservedItem) => ({
-              user: reservedItem.userId,
-              reservedBooksCount: reservedItem.items.length,
-            }));
-
-          setReservedUsers(users);
-        } else {
-          console.error('Invalid data structure received:', res.data);
+        try {
+            const res = await axios.get('reserved/all-reserved-books');
+            const reservedData = res?.data;
+    
+            if (Array.isArray(reservedData)) {
+            const users = reservedData
+                .filter((item) => item.userId)
+                .map((item) => ({
+                user: {
+                    id: item.userId,
+                    name: item.userName,
+                    email: item.email,
+                },
+                reservedBooksCount: item.reservedBooks.length,
+                }));
+    
+            setReservedUsers(users);
+            } else {
+            console.error('Invalid data structure received:', reservedData);
+            }
+    
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching reserved users:', error);
+            setLoading(false);
         }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching reserved users:', error);
-        setLoading(false);
-      }
     };
-
+  
     fetchReservedUsers();
   }, []);
+  
 
-  const isNumeric = (value) => {
-    const number = parseFloat(value);
-    return !isNaN(number) && isFinite(number);
-  };
+    const isNumeric = (value) => {
+        const number = parseFloat(value);
+        return !isNaN(number) && isFinite(number);
+    };
 
-  // Filter reserved users based on the search query
-  const filteredUsers = reservedUsers.filter((reservedUser) => {
-    if (!reservedUser.user) {
-      return false;
-    }
+    // Filter reserved users based on the search query
+    const filteredUsers = reservedUsers?.filter((reservedUser) => {
+        if (!reservedUser?.user) {
+        return false;
+        }
 
-    const query = searchQuery.trim().toLowerCase();
-    const nameMatch = reservedUser.user.name.trim().toLowerCase().includes(query);
+        const query = searchQuery.trim().toLowerCase();
+        const nameMatch = reservedUser?.user?.name?.trim()?.toLowerCase()?.includes(query);
 
-    const countMatch = isNumeric(query)
-      ? reservedUser.reservedBooksCount === parseInt(query, 10)
-      : false;
+        const countMatch = isNumeric(query)
+        ? reservedUser?.reservedBooksCount === parseInt(query, 10)
+        : false;
 
-    return nameMatch || countMatch; 
-  });
+        return nameMatch || countMatch; 
+    });
 
   return (
     <div className='res-container'>
@@ -86,27 +92,27 @@ const ReservedUsers = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.length === 0 ? (
+              {filteredUsers?.length === 0 ? (
                 <tr>
                   <td colSpan={3} >
                     No users found matching "{searchQuery}"
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((reservedUser, index) => (
-                  <tr key={reservedUser.user._id}>
-                    <td>{index + 1}</td>
-                    <td>{reservedUser.reservedBooksCount}</td>
-                    <td>
-                      <NavLink
-                        to={`/app/${userName}/reserved-users/${reservedUser.user._id}`}
-                      >
-                        <button className='full-width-button'>
-                        {reservedUser.user.name}
-                        </button>
-                      </NavLink>
-                    </td>
-                  </tr>
+                filteredUsers?.map((reservedUser, index) => (
+                    <tr key={reservedUser.user.id}>
+                        <td>{index + 1}</td>
+                        <td>{reservedUser.reservedBooksCount}</td>
+                        <td>
+                        <NavLink
+                            to={`/app/${userName}/reserved-users/${reservedUser.user.id}`}
+                        >
+                            <button className='full-width-button'>
+                            {reservedUser.user.name}
+                            </button>
+                        </NavLink>
+                        </td>
+                    </tr>
                 ))
               )}
             </tbody>

@@ -89,7 +89,7 @@ const CartItem = ({ item, removeFromCart, reserveBook, willUseBy, handleDateChan
           )}
  
           {isOutOfStock || isBookReserved ? 
-            <p>Available On: {availableDate ? availableDate.slice(0, 10) : 'TBD'}</p>
+            <p>Available On: {availableDate ? availableDate.slice(0, 10) : 'N/A'}</p>
             :              
             <input className='use-by-cart' type='date' value={willUseBy || ''} onChange={handleDateChange} required />
 }
