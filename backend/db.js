@@ -31,6 +31,49 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // books
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS books (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            bookName VARCHAR(255) NOT NULL,
+            authorName VARCHAR(255) NOT NULL,
+            isbnNumber VARCHAR(100) NOT NULL,
+            publishedDate DATE NOT NULL,
+            bookImage TEXT,
+            description TEXT,
+            numberOfCopies INT NOT NULL DEFAULT 1,
+            fine DECIMAL(10, 2),
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `);
+
+    // useByDates
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS useByDates (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            bookId INT NOT NULL,
+            willUseBy DATE NOT NULL,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (bookId) REFERENCES books(id) ON DELETE CASCADE
+        )
+    `);
+
+    // feedbacks
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS feedbacks (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            bookId INT NOT NULL,
+            userId INT NOT NULL,
+            rating INT NOT NULL,
+            feedback TEXT,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (bookId) REFERENCES books(id) ON DELETE CASCADE,
+            FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+
+
     // cart
     await db.query(`
         CREATE TABLE IF NOT EXISTS carts (

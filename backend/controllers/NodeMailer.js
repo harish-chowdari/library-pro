@@ -205,7 +205,7 @@ async function getEmailsHistory(req, res) {
 }
 
 // 5) Cron: run every 5 seconds, but only new overdue items get emailed once per item per day
-cron.schedule("*/5 * * * * *", async () => {
+cron.schedule("1 * * * * *", async () => {
   if (isRunning) return;
   isRunning = true;
   try {
