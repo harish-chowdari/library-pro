@@ -4,7 +4,8 @@
     width: 100%;
     display: flex;
     flex-direction: row-reverse;
-    background-color: #1A1A2E;
+    background-color: #24473f
+;
     color: #E5E5E5;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -16,13 +17,15 @@
     justify-content: center;
     align-items: center;
     width: 50%;
-    background-color: #1A1A2E;
+    background-color: #24473f
+;
 }
 
 .login-container .user-container img {
     width: 50%;
     height: 50%;
-    background-color: #1A1A2E;
+    background-color: #24473f
+;
 }
 
 .login-form-container{
@@ -35,7 +38,7 @@
 }
 .login-form-container h2{
     font-size: 2.5rem;
-
+    color: white;
 }
 .login-form {
     display: flex;

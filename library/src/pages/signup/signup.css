@@ -2,7 +2,7 @@
 .create-account-container {
     height: 100vh;
     display: flex;
-    background-color: #1A1A2E;
+    background-color: #24473f;
     color: #E5E5E5;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -13,12 +13,14 @@
     justify-content: center;
     align-items: center;
     width: 50%;
-    background-color: #1A1A2E;
+    background-color: #24473f
+;
 }
 .create-account-container .librarian-container img {
     width: auto;
     height: 100vh;
-    background-color: #1A1A2E;
+    background-color: #24473f
+;
 }
 .create-account-form-container{
     width: 50%;
@@ -28,6 +30,11 @@
     align-items: center;
 
 }
+
+.create-account-form-container, h2{
+    color: white;
+}
+
 .create-account-form {
     display: flex;
     flex-direction: column;

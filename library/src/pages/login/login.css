@@ -3,7 +3,7 @@
     height: 100vh;
     width: 100%;
     display: flex;
-    background-color: #1A1A2E;
+    background-color: #24473f;
     color: #E5E5E5;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -15,13 +15,13 @@
     justify-content: center;
     align-items: center;
     width: 50%;
-    background-color: #1A1A2E;
+    background-color: #24473f;
 }
 
 .login-container .librarian-container img {
     width: auto;
     height: 100vh;
-    background-color: #1A1A2E;
+    background-color: #24473f;
 }
 
 .login-form-container{

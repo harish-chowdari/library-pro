@@ -69,7 +69,7 @@ const CreateAccountPage = () => {
                     <img src={welcomeImage} alt="" />
                 </div>
                 <div className='create-account-form-container'>
-                    <h2>Create an Account</h2>
+                    <h2 style={{color:"white"}}>Create an Account</h2>
                     <form className="create-account-form">
                         <input 
                             type="text" 

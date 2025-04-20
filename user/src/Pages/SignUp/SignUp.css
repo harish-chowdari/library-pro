@@ -2,7 +2,8 @@
     height: 100vh;
     display: flex;
     flex-direction: row-reverse;
-    background-color: #1A1A2E;
+    background-color: #24473f
+;
     color: #E5E5E5;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -15,13 +16,20 @@
     justify-content: center;
     align-items: center;
     width: 50%;
-    background-color: #1A1A2E;
+    background-color: #24473f
+;
 }
 .create-account-container .librarian-container img {
     width: 70%;
     height: 65vh;
-    background-color: #1A1A2E;
+    background-color: #24473f
+;
 }
+
+.create-account-form-container, h2{
+    color: white;
+}
+
 .create-account-form-container{
     width: 50%;
     display: flex;
