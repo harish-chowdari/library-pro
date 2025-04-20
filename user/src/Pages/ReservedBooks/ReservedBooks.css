@@ -8,6 +8,7 @@
 h2 {
   text-align: center;
   margin-bottom: 20px;
+  color: rgb(4, 66, 37);
 }
 
 .history-division {
@@ -28,6 +29,7 @@ h2 {
 
 .history-headings h3 {
   text-align: center;
+  color: rgb(4, 66, 37);
 }
 
 .history-items-format {

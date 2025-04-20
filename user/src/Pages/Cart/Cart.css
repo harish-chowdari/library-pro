@@ -29,7 +29,7 @@
     text-align: center;
     margin: 0px;
     padding: 15px 0px;
-    color: rgb(62, 89, 98);
+    color: rgb(4, 66, 37);
 
   }
 
@@ -43,7 +43,7 @@
 
   .cart-hr {
     height: 0px;
-    background: rgb(62, 89, 98);
+    background: rgb(4, 66, 37);
     border: none;
     margin: 0px;
   }
@@ -52,8 +52,8 @@
     font-size: 1.25rem;
     font-weight: 600;
     padding: 10px;
-    border-bottom: 5px solid rgb(62, 89, 98);
-    color: rgb(62, 89, 98);
+    border-bottom: 5px solid rgb(4, 66, 37);
+    color: rgb(4, 66, 37);
   }
   
   .cartitems-format-main {
@@ -96,7 +96,7 @@
   }
 
   .bottom-hr-cart{
-    background: rgb(62, 89, 98);
+    background: rgb(4, 66, 37);
     border: none;
     margin: 0px;
     height: 2px;
@@ -128,7 +128,7 @@
     height: auto;
     width: 100px;
     border: 1px solid red;
-    color: rgb(62, 89, 98);
+    color: rgb(4, 66, 37);
   }
 
   .remove-button:hover{

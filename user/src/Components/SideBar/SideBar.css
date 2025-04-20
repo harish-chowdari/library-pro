@@ -7,7 +7,7 @@
   position: sticky;
   top: -75px;
   z-index: 2;
-  background-color: #f0f4f8; 
+  background-color: #c8eecf; 
   border-bottom: 2px solid #e1e8ee;
 }
 
@@ -41,13 +41,13 @@
 }
 
 .menu-icn {
-  color: #2c3e50; /* Dark blue shade (30%) */
+  color: #30a00e; /* Dark blue shade (30%) */
   cursor: pointer;
   transition: color 0.3s; /* Smooth transitions */
 }
 
 .menu-icn:hover {
-  color: #3498db; /* Brighter shade of blue */
+  color: #34db42; /* Brighter shade of blue */
 }
 
 
@@ -74,7 +74,7 @@
 
 .menu-nav-link {
   text-decoration: none;
-  color: #2c3e50; /* Dark blue */
+  color: #30a00e; /* Dark blue */
   font-size: 1.2rem; /* Slightly larger font */
   padding: 5px 10px;
   transition: background 0.3s, color 0.3s;
@@ -91,7 +91,7 @@
 }
 
 .menu-nav-link:hover {
-  background-color: #3498db; /* Light blue on hover */
+  background-color: #34db42; /* Light blue on hover */
   color: #ffffff; /* White text on hover */
 }
 
@@ -104,7 +104,7 @@
 }
 
 .cart-icon {
-  color: #2c3e50; /* Dark blue */
+  color: #30a00e; /* Dark blue */
   transition: color 0.3s;
 }
 
@@ -115,7 +115,7 @@
   right: -12px;
   font-weight: 600;
   font-size: 0.9rem;
-  background-color: rgb(62, 89, 98);
+  background-color: rgb(16, 92, 19);
   padding: 0px 8px;
   border-radius: 100%;
   color: white;
@@ -134,7 +134,7 @@
 }
 
 .nav-links h3{
-  color: rgb(62, 89, 98);
+  color: rgb(4, 66, 37);
 }
 
 .nav-item {
@@ -182,12 +182,12 @@
 }
 
 .my-profile:hover {
-  background-color: #3498db; /* Light blue on hover */
+  background-color: #34db42; /* Light blue on hover */
   color: #ffffff; /* White text on hover */
 }
 
 .my-profile-active {
-  background-color: #3498db; /* Light blue on hover */
+  background-color: #34db42; /* Light blue on hover */
   color: #ffffff;
   font-size: 1.2rem;
   padding: 5px 10px;

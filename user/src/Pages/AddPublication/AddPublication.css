@@ -29,7 +29,7 @@
 
 .add-publication-header h2 {
   font-size: 2rem;
-  color: rgb(35, 82, 102); /* Consistent color with `AddBooks` component */
+  color: rgb(4, 66, 37); /* Consistent color with `AddBooks` component */
 }
 
 .publication-details-form-container {
@@ -63,7 +63,7 @@
 }
 
 .publication-details-form button {
-  background-color: rgb(35, 82, 102);
+  background-color: rgb(4, 66, 37);
   color: white;
   padding: 12px 20px;
   font-size: 1rem;
@@ -74,7 +74,7 @@
 }
 
 .publication-details-form button:hover {
-  background-color: rgb(25, 72, 92); /* Darker on hover */
+  background-color: rgb(25, 92, 51); /* Darker on hover */
 }
 
 .image-preview {

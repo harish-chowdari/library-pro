@@ -29,7 +29,7 @@
 .res-container h2{
   text-align: center;
   font-size: 1.8rem;
-  color: rgb(68,89,98);
+  color: rgb(4, 66, 37);
 }
 
 .s-no{
@@ -49,7 +49,7 @@
 
 .res-users-table th {
   background-color: #f4f4f4;
-  color: #333;
+  color: rgb(4, 66, 37);
   font-size: 1.3rem;
 }
 
