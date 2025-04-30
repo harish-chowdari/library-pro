@@ -171,11 +171,96 @@ async function initDatabase() {
             FOREIGN KEY (book_id)  REFERENCES books(id) ON DELETE CASCADE
         )
     `);
+
+
+    await db.query(`
+        DELIMITER $$
+        CREATE PROCEDURE IF NOT EXISTS sp_add_to_cart(IN p_userId INT, IN p_bookId INT, OUT p_result VARCHAR(255))
+        BEGIN
+          DECLARE cartId INT;
+          SELECT id INTO cartId FROM carts WHERE userId = p_userId LIMIT 1;
+          IF cartId IS NULL THEN
+            INSERT INTO carts (userId) VALUES (p_userId);
+            SET cartId = LAST_INSERT_ID();
+          END IF;
+          IF EXISTS (SELECT 1 FROM cart_items WHERE cartId = cartId AND bookId = p_bookId) THEN
+            SET p_result = 'Book already in cart';
+          ELSE
+            INSERT INTO cart_items (cartId, bookId) VALUES (cartId, p_bookId);
+            SET p_result = 'Book added to cart successfully';
+          END IF;
+        END$$
+  
+        CREATE PROCEDURE IF NOT EXISTS sp_get_cart_items(IN p_userId INT)
+        BEGIN
+          SELECT ci.id AS cartItemId, b.id AS bookId, b.bookName AS title, b.fine AS price
+          FROM carts c
+          JOIN cart_items ci ON ci.cartId = c.id
+          JOIN books b ON b.id = ci.bookId
+          WHERE c.userId = p_userId;
+        END$$
+  
+        CREATE PROCEDURE IF NOT EXISTS sp_get_all_carts()
+        BEGIN
+          SELECT u.id AS userId, u.name AS userName, b.id AS bookId, b.bookName AS title, b.fine AS price
+          FROM users u
+          JOIN carts c ON u.id = c.userId
+          JOIN cart_items ci ON ci.cartId = c.id
+          JOIN books b ON b.id = ci.bookId;
+        END$$
+  
+        CREATE PROCEDURE IF NOT EXISTS sp_remove_from_cart(IN p_userId INT, IN p_bookId INT, OUT p_result VARCHAR(255))
+        BEGIN
+          DECLARE cartId INT;
+          SELECT id INTO cartId FROM carts WHERE userId = p_userId LIMIT 1;
+          IF cartId IS NULL THEN
+            SET p_result = 'Cart not found for this user';
+          ELSE
+            DELETE FROM cart_items WHERE cartId = cartId AND bookId = p_bookId;
+            SET p_result = 'Book removed from cart';
+          END IF;
+        END$$
+        DELIMITER ;
+      `);
+  
+      // view
+      await db.query(`
+        CREATE OR REPLACE VIEW cart_details AS
+        SELECT u.id AS userId, u.name AS userName, b.id AS bookId, b.bookName AS title, b.fine AS price, ci.id AS cartItemId
+        FROM users u
+        JOIN carts c ON u.id = c.userId
+        JOIN cart_items ci ON ci.cartId = c.id
+        JOIN books b ON b.id = ci.bookId;
+      `);
+  
+      // audit table
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS cart_audit (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          cartItemId INT,
+          cartId INT,
+          bookId INT,
+          action VARCHAR(50),
+          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+  
+      // trigger
+      await db.query(`
+        DROP TRIGGER IF EXISTS after_cart_item_insert;
+        CREATE TRIGGER after_cart_item_insert
+        AFTER INSERT ON cart_items
+        FOR EACH ROW
+        INSERT INTO cart_audit (cartItemId, cartId, bookId, action)
+        VALUES (NEW.id, NEW.cartId, NEW.bookId, 'INSERT');
+      `);
+  
+      console.log("Tables, procedures, view, and trigger ensured.");
+  }
   
 
 
     console.log("Tables ensured."); 
-}
 
 connection.connect((err) => {
     if (err) {

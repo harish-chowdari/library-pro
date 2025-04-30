@@ -4,39 +4,32 @@ async function addToCart(req, res) {
     try {
         const { userId, bookId } = req.body;
         
-        // Check if a cart already exists for the user
-        let [cartRows] = await connection.query("SELECT * FROM carts WHERE userId = ?", [userId]);
-        
-        // If the cart doesn't exist, create a new one
-        if (cartRows.length === 0) {
-            await connection.query(
-                "INSERT INTO carts (userId) VALUES (?)", 
-                [userId]
-            );
-            cartRows = await connection.query("SELECT * FROM carts WHERE userId = ?", [userId]);
-        }
-        
-        const cartId = cartRows[0].id;
-
-        // Check if the book is already in the cart
-        const [existingItem] = await connection.query(
-            "SELECT * FROM cart_items WHERE cartId = ? AND bookId = ?", 
-            [cartId, bookId]
-        );
-        
-        if (existingItem.length > 0) {
-            return res.status(200).json({ alreadyAdded: "Book already added to cart" });
+        if (!userId || !bookId) {
+            return res.status(400).json({ message: "userId and bookId are required" });
         }
 
-        // Add the book to the cart
-        await connection.query(
-            "INSERT INTO cart_items (cartId, bookId) VALUES (?, ?)",
-            [cartId, bookId]
+        // Use the stored procedure instead of direct queries
+        const [result] = await connection.query(
+            "CALL sp_add_to_cart(?, ?, @result)", 
+            [userId, bookId]
         );
-
-        res.status(200).json({ message: "Item added to cart successfully" });
+        
+        // Get the output parameter value
+        const [output] = await connection.query("SELECT @result AS result");
+        
+        if (output[0].result === 'Book already in cart') {
+            return res.status(200).json({ alreadyAdded: output[0].result });
+        }
+        
+        res.status(200).json({ message: output[0].result });
     } catch (error) {
         console.error(error);
+        
+        // Handle specific SQL errors
+        if (error.sqlState === '45000') {
+            return res.status(400).json({ message: error.sqlMessage });
+        }
+        
         res.status(500).json({ message: error.message });
     }
 }
@@ -49,24 +42,22 @@ async function getCartItemsByUserId(req, res) {
             return res.status(400).json({ message: "userId is required" });
         }
 
-        // Fetch the cart for the user
-        const [cartRows] = await connection.query("SELECT * FROM carts WHERE userId = ?", [userId]);
-
-        if (cartRows.length === 0) {
-            return res.status(200).json({ message: "Cart not found for the user" });
+        // Use the stored procedure to get cart items
+        const [items] = await connection.query(
+            "CALL sp_get_cart_items(?)",
+            [userId]
+        );
+        
+        // If no items found, stored procedure returns empty result set
+        if (items[0].length === 0) {
+            return res.status(200).json({ 
+                userId, 
+                items: [],
+                message: "Cart is empty or not found" 
+            });
         }
 
-        const cartId = cartRows[0].id;
-
-        // Fetch the items in the cart
-        const [cartItems] = await connection.query(
-            `SELECT books.* FROM cart_items
-            JOIN books ON cart_items.bookId = books.id
-            WHERE cart_items.cartId = ?`,
-            [cartId]
-        );
-
-        res.status(200).json({ userId, items: cartItems });
+        res.status(200).json({ userId, items: items[0] });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
@@ -75,21 +66,11 @@ async function getCartItemsByUserId(req, res) {
 
 async function getCartItems(req, res) {
     try {
-        const [carts] = await connection.query("SELECT * FROM carts");
-
-        const cartItems = [];
-
-        for (const cart of carts) {
-            const [items] = await connection.query(
-                `SELECT books.* FROM cart_items
-                JOIN books ON cart_items.bookId = books.id
-                WHERE cart_items.cartId = ?`,
-                [cart.id]
-            );
-            cartItems.push({ userId: cart.userId, items });
-        }
-
-        res.status(200).json(cartItems);
+        // Use the stored procedure to get all carts
+        const [results] = await connection.query("CALL sp_get_all_carts()");
+        
+        // The stored procedure already formats data appropriately
+        res.status(200).json(results[0]);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
@@ -100,22 +81,24 @@ async function removeFromCart(req, res) {
     try {
         const { userId, bookId } = req.body;
 
-        // Find the cart for the user
-        const [cartRows] = await connection.query("SELECT * FROM carts WHERE userId = ?", [userId]);
-
-        if (cartRows.length === 0) {
-            return res.status(404).json({ message: "Cart not found for the user" });
+        if (!userId || !bookId) {
+            return res.status(400).json({ message: "userId and bookId are required" });
         }
 
-        const cartId = cartRows[0].id;
-
-        // Remove the item from the cart
-        await connection.query(
-            "DELETE FROM cart_items WHERE cartId = ? AND bookId = ?",
-            [cartId, bookId]
+        // Use the stored procedure
+        const [result] = await connection.query(
+            "CALL sp_remove_from_cart(?, ?, @result)", 
+            [userId, bookId]
         );
-
-        res.status(200).json({ message: "Item removed from cart successfully" });
+        
+        // Get the output parameter value
+        const [output] = await connection.query("SELECT @result AS result");
+        
+        if (output[0].result === 'Cart not found for this user') {
+            return res.status(404).json({ message: output[0].result });
+        }
+        
+        res.status(200).json({ message: output[0].result });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
@@ -125,8 +108,13 @@ async function removeFromCart(req, res) {
 async function removeFromEveryOnesCart(req, res) {
     try {
         const { bookId } = req.body;
+        
+        if (!bookId) {
+            return res.status(400).json({ message: "bookId is required" });
+        }
 
-        // Remove the book from all carts
+        // This operation is best handled by direct SQL for simplicity
+        // We could create a stored procedure for this as well
         await connection.query("DELETE FROM cart_items WHERE bookId = ?", [bookId]);
 
         res.status(200).json({ message: "Book removed from all carts successfully" });
@@ -136,10 +124,52 @@ async function removeFromEveryOnesCart(req, res) {
     }
 }
 
+// New method to get cart summary using the view
+async function getCartSummary(req, res) {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({ message: "userId is required" });
+        }
+        
+        // Use the cart_details view
+        const [cartDetails] = await connection.query(
+            "SELECT * FROM cart_details WHERE userId = ?",
+            [userId]
+        );
+        
+        if (cartDetails.length === 0) {
+            return res.status(200).json({ 
+                userId, 
+                cartItems: [],
+                totalItems: 0,
+                message: "Cart is empty or not found" 
+            });
+        }
+        
+        // Calculate summary data
+        const totalItems = cartDetails.length;
+        const totalPrice = cartDetails.reduce((sum, item) => sum + (item.price || 0), 0);
+        
+        res.status(200).json({
+            userId,
+            cartItems: cartDetails,
+            totalItems,
+            totalPrice,
+            summary: `Your cart has ${totalItems} items with a total value of $${totalPrice.toFixed(2)}`
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+}
+
 module.exports = {
     addToCart,
     getCartItemsByUserId,
     getCartItems,
     removeFromCart,
-    removeFromEveryOnesCart
+    removeFromEveryOnesCart,
+    getCartSummary // Export the new method
 };
